@@ -289,7 +289,8 @@ ignored = [
 # Need to integrate apis to master
 [[constraint]]
   name = "istio.io/api"
-  branch = "master"
+  source = "github.com/syallop-org/api"
+  branch = "inbound_destination_rule"
 
 # fortio is latest tagged by default
 

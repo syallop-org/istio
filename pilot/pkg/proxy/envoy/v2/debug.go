@@ -241,7 +241,7 @@ func clientAuthProtocol(rule *networking.DestinationRule, port *model.Port) auth
 	if rule.TrafficPolicy == nil {
 		return authnHTTP
 	}
-	_, _, _, tls := networking_core.SelectTrafficPolicyComponents(rule.TrafficPolicy, port)
+	_, _, _, _, tls := networking_core.SelectTrafficPolicyComponents(rule.TrafficPolicy, port)
 
 	if tls != nil {
 		switch tls.Mode {

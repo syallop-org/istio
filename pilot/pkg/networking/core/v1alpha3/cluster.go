@@ -542,7 +542,7 @@ func (configgen *ConfigGeneratorImpl) buildInboundClusterForPortOrUDS(pluginPara
 		if destinationRule.TrafficPolicy != nil {
 			// only connection pool settings make sense on the inbound path.
 			// upstream TLS settings/outlier detection/load balancer don't apply here.
-			applyConnectionPool(pluginParams.Env, localCluster, destinationRule.TrafficPolicy.ConnectionPool,
+			applyConnectionPool(pluginParams.Env, localCluster, destinationRule.TrafficPolicy.ConnectionPool, destinationRule.TrafficPolicy.InboundConnectionPool,
 				model.TrafficDirectionInbound)
 			localCluster.Metadata = util.BuildConfigInfoMetadata(config.ConfigMeta)
 		}
@@ -603,11 +603,12 @@ func buildIstioMutualTLS(serviceAccounts []string, sni string, proxy *model.Prox
 
 // SelectTrafficPolicyComponents returns the components of TrafficPolicy that should be used for given port.
 func SelectTrafficPolicyComponents(policy *networking.TrafficPolicy, port *model.Port) (
-	*networking.ConnectionPoolSettings, *networking.OutlierDetection, *networking.LoadBalancerSettings, *networking.TLSSettings) {
+	*networking.ConnectionPoolSettings, *networking.ConnectionPoolSettings, *networking.OutlierDetection, *networking.LoadBalancerSettings, *networking.TLSSettings) {
 	if policy == nil {
-		return nil, nil, nil, nil
+		return nil, nil, nil, nil, nil
 	}
 	connectionPool := policy.ConnectionPool
+        inboundConnectionPool := policy.ConnectionPool
 	outlierDetection := policy.OutlierDetection
 	loadBalancer := policy.LoadBalancer
 	tls := policy.Tls
@@ -629,6 +630,7 @@ func SelectTrafficPolicyComponents(policy *networking.TrafficPolicy, port *model
 			}
 			if foundPort {
 				connectionPool = p.ConnectionPool
+                                inboundConnectionPool = p.InboundConnectionPool
 				outlierDetection = p.OutlierDetection
 				loadBalancer = p.LoadBalancer
 				tls = p.Tls
@@ -636,7 +638,7 @@ func SelectTrafficPolicyComponents(policy *networking.TrafficPolicy, port *model
 			}
 		}
 	}
-	return connectionPool, outlierDetection, loadBalancer, tls
+	return connectionPool, inboundConnectionPool, outlierDetection, loadBalancer, tls
 }
 
 // ClusterMode defines whether the cluster is being built for SNI-DNATing (sni passthrough) or not
@@ -654,9 +656,9 @@ const (
 func applyTrafficPolicy(env *model.Environment, cluster *apiv2.Cluster, policy *networking.TrafficPolicy,
 	port *model.Port, serviceAccounts []string, defaultSni string, clusterMode ClusterMode, direction model.TrafficDirection,
 	proxy *model.Proxy) {
-	connectionPool, outlierDetection, loadBalancer, tls := SelectTrafficPolicyComponents(policy, port)
+	connectionPool, inboundConnectionPool, outlierDetection, loadBalancer, tls := SelectTrafficPolicyComponents(policy, port)
 
-	applyConnectionPool(env, cluster, connectionPool, direction)
+        applyConnectionPool(env, cluster, connectionPool, inboundConnectionPool, direction)
 	applyOutlierDetection(cluster, outlierDetection)
 	applyLoadBalancer(cluster, loadBalancer)
 	if clusterMode != SniDnatClusterMode {
@@ -666,7 +668,14 @@ func applyTrafficPolicy(env *model.Environment, cluster *apiv2.Cluster, policy *
 }
 
 // FIXME: there isn't a way to distinguish between unset values and zero values
-func applyConnectionPool(env *model.Environment, cluster *apiv2.Cluster, settings *networking.ConnectionPoolSettings, direction model.TrafficDirection) {
+func applyConnectionPool(env *model.Environment, cluster *apiv2.Cluster, poolSettings *networking.ConnectionPoolSettings, inboundPoolSettings *networking.ConnectionPoolSettings, direction model.TrafficDirection) {
+        var settings *networking.ConnectionPoolSettings
+        if direction == model.TrafficDirectionInbound {
+          settings = inboundPoolSettings
+        } else {
+          settings = poolSettings
+        }
+
 	if settings == nil {
 		return
 	}

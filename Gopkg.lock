@@ -1655,8 +1655,8 @@
   version = "v2.2.1"
 
 [[projects]]
-  branch = "master"
-  digest = "1:fa63ebc108dd3e6e80821ad9f6753f28ff97dd4bb198a18ae3386ee92b21eb5d"
+  branch = "inbound_destination_rule"
+  digest = "1:e0722d8075d6d6467a87d602efeaa68c9ee7c04da0fce52711a580c82dd1b5b8"
   name = "istio.io/api"
   packages = [
     "authentication/v1alpha1",
@@ -1672,7 +1672,8 @@
     "rbac/v1alpha1",
   ]
   pruneopts = "T"
-  revision = "87afa02b7be5b966c0ad93afb684c5968fbd0120"
+  revision = "eb5b7d237c686b519da71d05267dfe8bdd3a4eb1"
+  source = "github.com/syallop-org/api"
 
 [[projects]]
   branch = "release-1.11"
