@@ -34,6 +34,7 @@ import (
 	"istio.io/istio/pilot/pkg/networking/util"
 	"istio.io/istio/pkg/log"
 	"istio.io/istio/pkg/proto"
+	google_protobuf "github.com/gogo/protobuf/types"
 )
 
 func (configgen *ConfigGeneratorImpl) buildGatewayListeners(env *model.Environment, node *model.Proxy, push *model.PushContext) ([]*xdsapi.Listener, error) {
@@ -385,6 +386,11 @@ func (configgen *ConfigGeneratorImpl) createGatewayHTTPFilterChainOpts(
 					Dns:     true,
 				},
 				ServerName: EnvoyServerName,
+                                // TODO: Make configurable.
+                                // Otherwise this appears to default to 100
+                                Http2ProtocolOptions: &core.Http2ProtocolOptions{
+                                  MaxConcurrentStreams: &google_protobuf.UInt32Value{Value: 1024},
+                                },
 			},
 		},
 	}
